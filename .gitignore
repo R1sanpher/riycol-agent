@@ -21,3 +21,7 @@ repomix-output.md
 
 # 本地配置含密钥
 .vscode/settings.json
+
+# 运行时生成的文件
+discord_bot.pid
+start_discord_bot.ps1
