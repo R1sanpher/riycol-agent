@@ -20,7 +20,7 @@ SANDBOX_PATH = str(CFG.DATA / "sandbox")
 AUDIT_LOG = str(CFG.DATA / "security_audit.log")
 
 ALLOWED_COMMANDS = ["ls", "cp", "mv", "mkdir", "cat", "echo", "touch",
-                    "python", "pip", "git", "dir", "Get-ChildItem"]
+                    "rm", "python", "pip", "git", "dir", "Get-ChildItem"]
 
 DANGEROUS_PATTERNS = [
     "rm -rf /", "rm -rf ~", "rm -rf .",

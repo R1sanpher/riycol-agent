@@ -4,8 +4,7 @@
 测试: CRUD、并发、边界条件、异常处理
 """
 
-import os, sys, time
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+import time
 
 import pytest
 from core.db import Database, DB

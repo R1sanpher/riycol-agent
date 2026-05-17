@@ -1,6 +1,5 @@
 """LLM Bridge unit tests — 12 tests"""
-import os, sys, json
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+import json
 import pytest
 from unittest.mock import patch, MagicMock
 

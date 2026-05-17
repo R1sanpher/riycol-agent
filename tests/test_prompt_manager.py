@@ -1,6 +1,5 @@
 """Prompt Manager unit tests — 15 tests"""
-import os, sys, json
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+import json
 import pytest
 
 

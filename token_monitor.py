@@ -58,9 +58,9 @@ def fmt(n: int | float) -> str:
     if n is None:
         return "-"
     if isinstance(n, float) and n < 0.01:
-        return f"${n:.6f}"
+        return f"¥{n:.6f}"
     if isinstance(n, float):
-        return f"${n:.4f}"
+        return f"¥{n:.4f}"
     return f"{n:,}"
 
 
@@ -72,7 +72,7 @@ def source_icon(src: str) -> str:
 
 # ── 数据获取 ──
 
-FETCH_INTERVAL = 2.0        # normal poll interval (seconds)
+FETCH_INTERVAL = 3.0        # normal poll interval (seconds)
 MAX_BACKOFF = 30.0          # max backoff when server is down
 BACKOFF_MULTIPLIER = 1.8    # exponential backoff factor
 
@@ -160,11 +160,14 @@ FONT_BIG = ("Segoe UI", 18, "bold")
 class TokenMonitor:
     def __init__(self, server_url: str = ""):
         self.fetcher = DataFetcher(server_url)
-        self._data_queue: queue.Queue[dict[str, Any] | None] = queue.Queue()
+        self._data_queue: queue.Queue = queue.Queue()
         self._interval = FETCH_INTERVAL
         self._last_data: dict[str, Any] | None = None
+        self._running = True
         self._build_ui()
-        self._poll()
+        threading.Thread(target=self._bg_loop, daemon=True).start()
+        self.root.after(100, self._check_queue)
+        self.root.protocol("WM_DELETE_WINDOW", self._on_close)
 
     def _build_ui(self):
         if getattr(ttk, "_use_ttkbootstrap", False):
@@ -192,7 +195,7 @@ class TokenMonitor:
             ("prompt",  "Prompt Tokens",    "success"),
             ("completion", "Completion Tokens", "info"),
             ("total",   "总 Token 数",       "warning"),
-            ("cost",    "估算费用 (USD)",   "danger"),
+            ("cost",    "估算费用 (RMB)",   "danger"),
         ]
         cframe = ttk.Frame(self.root)
         cframe.pack(fill=ttk.X, padx=14, pady=(6, 10))
@@ -266,35 +269,42 @@ class TokenMonitor:
         tree.pack(fill=ttk.X, expand=True)
         return frame, tree
 
-    # ── 线程化轮询 ──
+    # ── 持久后台线程 + 主线程队列检查 ──
 
-    def _poll(self):
-        """在后台线程发起 fetch，避免阻塞 UI。"""
-        threading.Thread(target=self._fetch_worker, daemon=True).start()
-        self.root.after(60, self._process_result)
+    def _on_close(self):
+        """窗口关闭时停止后台线程。"""
+        self._running = False
+        self.root.destroy()
 
-    def _fetch_worker(self):
-        """后台线程：先尝试 HTTP，失败后降级到文件。"""
-        data = self.fetcher.fetch_remote()
-        if data is not None:
-            type_ = "remote"
-        else:
-            data = self.fetcher.fetch_file()
-            type_ = "file" if data is not None else None
-        self._data_queue.put((data, type_))
+    def _bg_loop(self):
+        """持久后台线程：循环获取数据，不反复创建线程。"""
+        while self._running:
+            data = self.fetcher.fetch_remote()
+            if data is not None:
+                self._data_queue.put((data, "remote"))
+            else:
+                data = self.fetcher.fetch_file()
+                self._data_queue.put((data, "file" if data is not None else None))
+            time.sleep(self._interval)
 
-    def _process_result(self):
-        """主线程：检查后台线程的结果并更新 UI。"""
+    def _check_queue(self):
+        """主线程：每 100ms 检查队列并更新 UI。"""
+        data = None
+        type_ = None
+        got_item = False
         try:
-            data, type_ = self._data_queue.get_nowait()
+            while True:
+                data, type_ = self._data_queue.get_nowait()
+                got_item = True
         except queue.Empty:
-            # Not ready yet — check again shortly
-            self.root.after(60, self._process_result)
+            pass
+
+        if not got_item:
+            self.root.after(100, self._check_queue)
             return
 
-        now = time.time()
         if data is not None:
-            self._interval = FETCH_INTERVAL  # reset backoff on success
+            self._interval = FETCH_INTERVAL
             self._last_data = data
             self._update_cards(data)
             self._update_breakdowns(data)
@@ -311,13 +321,12 @@ class TokenMonitor:
                 self._clear_display()
                 self._footer_lbl.config(text="⚠ 服务器未启动，等待重连中...")
 
-        # Update status style
         boot = "success" if data is not None else "secondary"
         if getattr(ttk, "_use_ttkbootstrap", False):
             self._status_lbl.configure(bootstyle=boot)
 
         self._time_lbl.config(text=f"刷新: {time.strftime('%H:%M:%S')}  |  间隔: {self._interval:.0f}s")
-        self.root.after(int(self._interval * 1000), self._poll)
+        self.root.after(100, self._check_queue)
 
     # ── UI 更新 ──
 
@@ -335,7 +344,7 @@ class TokenMonitor:
         self._cards["completion"].config(text=fmt(t["completion_tokens"]))
         self._cards["total"].config(text=fmt(t["total_tokens"]))
         cost = t["cost"]
-        self._cards["cost"].config(text=f"${cost:.4f}" if cost >= 0.01 else f"${cost:.6f}")
+        self._cards["cost"].config(text=f"¥{cost:.4f}" if cost >= 0.01 else f"¥{cost:.6f}")
         self._update_footer(t)
 
     def _update_footer(self, t: dict, stale: bool = False):

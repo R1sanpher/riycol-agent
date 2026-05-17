@@ -1,6 +1,5 @@
 """API endpoint unit tests"""
-import os, sys, io
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+import io
 import pytest
 from unittest.mock import patch, MagicMock
 

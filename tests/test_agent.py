@@ -5,9 +5,6 @@
 注意: API 调用被 mock，不依赖真实网络
 """
 
-import os, sys
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-
 import pytest
 from unittest.mock import patch, MagicMock
 

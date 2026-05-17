@@ -4,7 +4,6 @@ E2E Integration Tests — Full pipeline: chat, KB, agent, DB
 Tests the complete flow without mocking external boundaries.
 """
 import os, sys, json, time, tempfile
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import pytest
 
 
