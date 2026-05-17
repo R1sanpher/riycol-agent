@@ -114,9 +114,8 @@ class Planner:
     def _call_planner(self, prompt: str, task: str) -> str:
         from core.model_router import route
         model = self.model if self.model != "auto" else route(task)
-        # Lazy import to avoid circular dependency
-        from plugins.agent import raw_llm_call
-        return raw_llm_call(model, "You are a task planner.", prompt, [], temperature=0.3, max_tokens=512)
+        from core.llm_client import llm_call
+        return llm_call(model, "You are a task planner.", prompt, [], temperature=0.3, max_tokens=512)
 
     def _heuristic_plan(self, task: str, tools: list[str]) -> ExecutionPlan:
         """Fallback: single-step plan when LLM planning is unavailable."""

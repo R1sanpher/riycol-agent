@@ -31,8 +31,8 @@ class Reflection:
         """Review output against the task and return structured critique."""
         prompt = self._build_critique_prompt(task, output, plan_context)
         try:
-            from plugins.agent import raw_llm_call
-            raw = raw_llm_call(self.model, self._system_prompt(), prompt, [], temperature=0.3, max_tokens=512)
+            from core.llm_client import llm_call
+            raw = llm_call(self.model, self._system_prompt(), prompt, [], temperature=0.3, max_tokens=512)
         except Exception as e:
             log.warn(f"Reflection critique call failed: {e}")
             return CritiqueResult(passes=True, score=0.7, raw_critique="critique unavailable")
@@ -75,7 +75,7 @@ class Reflection:
         )
 
     def _parse_critique(self, raw: str) -> CritiqueResult:
-        json_match = re.search(r"\{[\s\S]*?\}", raw)
+        json_match = re.search(r"\{[\s\S]*\}", raw)
         if json_match:
             try:
                 d = json.loads(json_match.group())

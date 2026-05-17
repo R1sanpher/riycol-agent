@@ -6,28 +6,14 @@ notion_edited: "2026-05-16T20:56:00.000Z"
 status: "synced"
 ---
 
-riycol run [all|server|telegram|agent] — 启动服务
+# CLI 命令大全
 
-riycol agent list — 列出Agent
+详细文档（15 子命令完整参数）请查看：[[00-Project/Operations/CLI命令参考]]
 
-riycol agent run <task> [--parallel] [--reflect] — Agent执行
+### 快速参考
 
-riycol agent review <task> — 带记忆上下文
-
-riycol crew roles — 列出5角色
-
-riycol crew run <task> --roles riycol reviewer — 多角色协作
-
-riycol sync [all|notion|session|status] — 同步管理 [新]
-
-riycol model list|check|download <key> — 模型管理
-
-riycol data stats|build|export — 数据管理
-
-riycol finetune stats|prepare|clean|validate|convert|config|all — 微调管道
-
-riycol kb refresh|stats — 知识库
-
-riycol db|memory|scheduler|validate|version — 运维命令
-
-riycol plugin list — 插件列表
+- `riycol run [server|telegram|agent]` — 启动服务
+- `riycol agent run <task>` — Agent 执行
+- `riycol crew run <task> --roles ...` — 多角色协作
+- `riycol sync [notion|session|status]` — 同步管理
+- `riycol kb refresh|stats` — 知识库

@@ -4,6 +4,7 @@ Reuses AIChat from the Telegram plugin for LLM routing (90/10 local/cloud).
 Provides slash commands /chat and /ask, plus DM notification support.
 """
 import asyncio
+import os
 import re
 import threading
 import discord
@@ -23,6 +24,7 @@ class DiscordBot:
         self.running = False
         self._thread = None
         self._loop = None
+        self._proxy = None
 
         # Parse allowed users (same pattern as Telegram)
         self._allowed_users: set[int] = set()
@@ -46,6 +48,14 @@ class DiscordBot:
         async def on_ready():
             await self.tree.sync()
             log.info(f"Discord bot logged in as {self.client.user} (ID: {self.client.user.id})")
+
+        @self.client.event
+        async def on_disconnect():
+            log.warn("Discord bot disconnected from gateway")
+
+        @self.client.event
+        async def on_resumed():
+            log.info("Discord bot resumed connection")
 
         @self.tree.command(name="chat", description="Chat with Riycol AI (remembers conversation)")
         @app_commands.describe(message="Your message for the AI")
@@ -154,26 +164,43 @@ class DiscordBot:
     def start(self):
         """Start the Discord bot in a background thread."""
         self.running = True
+        # Apply proxy from TG_PROXY for Discord (China network)
+        proxy = CFG.TG_PROXY
+        if proxy:
+            self._proxy = proxy
+            os.environ["HTTP_PROXY"] = proxy
+            os.environ["HTTPS_PROXY"] = proxy
+            log.info(f"Discord bot using proxy: {proxy}")
         self._thread = threading.Thread(target=self._run_loop, daemon=True, name="discord-bot")
         self._thread.start()
         log.info("Discord bot thread started")
 
     def _run_loop(self):
         """Run the asyncio event loop in this thread."""
-        self._loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self._loop)
         try:
-            self._loop.run_until_complete(self.client.start(CFG.DISCORD_BOT_TOKEN))
+            self._loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self._loop)
+            try:
+                self._loop.run_until_complete(self.client.start(CFG.DISCORD_BOT_TOKEN))
+            except Exception as e:
+                log.error(f"Discord bot error: {e}")
+            finally:
+                try:
+                    self._loop.close()
+                except Exception:
+                    pass
+                if self.running:
+                    log.warn("Discord bot disconnected unexpectedly")
         except Exception as e:
-            log.error(f"Discord bot error: {e}")
-        finally:
-            self._loop.close()
-            if self.running:
-                log.warn("Discord bot disconnected unexpectedly")
+            log.error(f"Discord bot thread crashed: {e}")
 
     def stop(self):
         """Gracefully stop the bot."""
         self.running = False
         if self._loop and self._loop.is_running():
             asyncio.run_coroutine_threadsafe(self.client.close(), self._loop)
+        # Clean up proxy env vars
+        if self._proxy:
+            os.environ.pop("HTTP_PROXY", None)
+            os.environ.pop("HTTPS_PROXY", None)
         log.info("Discord bot stopped")

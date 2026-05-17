@@ -666,6 +666,11 @@ def raw_llm_call(model: str, system: str, user: str, history: list | None = None
         return text
 
 
+# Register LLM call with core layer to break circular dependency
+from core.llm_client import set_llm_call
+set_llm_call(raw_llm_call)
+
+
 class AgentSwarm:
     """Multi-agent swarm with task dispatching, parallel execution, and synthesis.
 

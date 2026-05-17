@@ -117,3 +117,12 @@ Old version archived to .learnings/prompts_archive/. Monitor performance for reg
 Prompt `test/up` upgraded v1→v2: test
 ### Suggested Action
 Old version archived to .learnings/prompts_archive/. Monitor performance for regression.
+
+## [LRN-20260517-23205] best_practice
+**Priority**: medium
+**Status**: resolved
+**Area**: config
+### Summary
+Prompt `test/up` upgraded v1→v2: test
+### Suggested Action
+Old version archived to .learnings/prompts_archive/. Monitor performance for regression.
