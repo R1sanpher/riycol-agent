@@ -1,0 +1,19 @@
+# PromptFoo 测试：对比原始 prompt 与优化版
+description: "Token 优化对比 - 首页PPT生成器"
+
+prompts:
+  - file://original_prompt.txt
+  - file://optimized_prompt.txt
+
+providers:
+  - id: echo
+    # echo provider 直接返回 prompt 本身，用于对比 token 长度
+    label: "token-counter"
+
+tests:
+  - description: "Token 长度对比"
+    vars:
+      topic: "AI 产品发布会"
+    assert:
+      - type: javascript
+        value: "Math.abs(output.length - 1000) < 5000"

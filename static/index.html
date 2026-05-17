@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Riycol Agent — AI Chat</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f0f23;height:100vh}
+.container{max-width:860px;margin:0 auto;height:100vh;display:flex;flex-direction:column}
+.header{background:linear-gradient(135deg,#1a1a3e,#0d0d2b);color:#e0e0ff;padding:10px 24px;border-bottom:1px solid #2a2a5e;text-align:center}
+.header h1{font-size:16px;display:flex;align-items:center;justify-content:center;gap:8px}
+.header .sub{font-size:11px;opacity:0.6}
+.header .stats{display:flex;gap:16px;justify-content:center;margin-top:4px;font-size:11px;opacity:0.5}
+.chat-area{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth}
+.message{max-width:80%;padding:10px 16px;border-radius:12px;line-height:1.65;font-size:14px;animation:fadeIn 0.3s;word-break:break-word}
+.message p{margin:4px 0}
+.message ul,.message ol{padding-left:20px;margin:4px 0}
+.message li{margin:2px 0}
+.user{background:#2a2a5e;color:#e0e0ff;align-self:flex-end;border-radius:12px 12px 2px 12px}
+.bot{background:#1a1a3e;color:#c0c0e0;align-self:flex-start;border-radius:12px 12px 12px 2px;border:1px solid #2a2a5e}
+.bot .kb-badge{display:inline-block;font-size:10px;padding:1px 8px;border-radius:8px;background:#2a5a2a;color:#80d080;margin-bottom:6px}
+.typing{display:flex;gap:5px;padding:6px 0}
+.typing span{width:7px;height:7px;background:#6a6a9e;border-radius:50%;animation:bounce 1.4s infinite}
+.typing span:nth-child(2){animation-delay:0.2s}
+.typing span:nth-child(3){animation-delay:0.4s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes bounce{0%,80%,100%{transform:scale(1)}40%{transform:scale(1.3)}}
+.input-wrap{display:flex;gap:8px;padding:12px 16px 16px;background:#0d0d2b;border-top:1px solid #1a1a3e}
+.input-wrap textarea{flex:1;padding:10px 16px;background:#1a1a3e;border:1px solid #2a2a5e;border-radius:12px;font-size:14px;outline:none;color:#e0e0ff;resize:none;font-family:inherit;line-height:1.5;max-height:120px;min-height:44px}
+.input-wrap textarea:focus{border-color:#4a4a8e}
+.input-wrap textarea::placeholder{color:#5a5a8e}
+.input-wrap button{padding:10px 20px;background:#3a3a7e;color:#e0e0ff;border:none;border-radius:12px;font-size:14px;cursor:pointer;font-weight:500;transition:all 0.2s}
+.input-wrap button:hover{background:#4a4a9e}
+.input-wrap button:disabled{opacity:0.3;cursor:not-allowed}
+.input-wrap button.stop{background:#7e3a3a;display:none}
+.input-wrap button.stop:hover{background:#9e4a4a}
+.status-bar{display:flex;justify-content:space-between;padding:6px 24px;font-size:11px;color:#4a4a7e}
+.status-bar a{cursor:pointer;text-decoration:underline;margin-left:10px}
+.status-bar .export-btn{color:#5a7a5a}
+.status-bar .export-btn:hover{color:#80a080}
+.status-bar .clear-btn{color:#6a4a4a}
+.status-bar .clear-btn:hover{color:#a06060}
+.settings-row{display:flex;gap:12px;align-items:center;padding:4px 16px 0;font-size:11px;color:#5a5a8e}
+.settings-row label{white-space:nowrap}
+.settings-row input[type=range]{width:60px;accent-color:#4a4a8e}
+.settings-row input[type=number]{width:50px;background:#1a1a3e;border:1px solid #2a2a5e;color:#c0c0e0;padding:2px 4px;border-radius:4px;font-size:11px;text-align:center}
+.settings-row .toggle{display:flex;align-items:center;gap:4px;cursor:pointer}
+.settings-row select{background:#1a1a3e;border:1px solid #2a2a5e;color:#c0c0e0;padding:2px 6px;border-radius:4px;font-size:11px;outline:none}
+.message code{background:#2a2a4a;padding:1px 5px;border-radius:3px;font-size:13px;font-family:'Cascadia Code',Consolas,monospace}
+.message pre{background:#0a0a1e;padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0;border:1px solid #2a2a4a;font-size:13px;line-height:1.45}
+.message pre code{background:none;padding:0;font-size:13px}
+.message blockquote{border-left:3px solid #4a4a8e;padding-left:12px;margin:6px 0;color:#8a8aae}
+.message table{border-collapse:collapse;margin:6px 0;font-size:13px}
+.message th,.message td{border:1px solid #2a2a5e;padding:4px 10px;text-align:left}
+.message strong{color:#e0e0ff}
+.message em{color:#a0a0c0}
+@media(max-width:600px){.message{max-width:92%}.settings-row{flex-wrap:wrap}}
+.confirm-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:100;justify-content:center;align-items:center}
+.confirm-box{background:#1a1a3e;border:1px solid #3a3a7e;border-radius:12px;padding:24px;text-align:center;color:#c0c0e0}
+.confirm-box button{margin:8px 6px 0;padding:8px 20px;border-radius:8px;border:none;cursor:pointer;font-size:13px}
+.confirm-box .btn-yes{background:#7e3a3a;color:#e0e0ff}
+.confirm-box .btn-no{background:#3a3a7e;color:#e0e0ff}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+  <h1>⚡ Riycol Agent</h1>
+  <div class="sub">本地模型 · 流式输出 · 多轮对话 · 知识库增强</div>
+  <div class="stats">
+    <span id="kbBadge" style="display:none">📚 知识库</span>
+    <span>📊 <span id="tokenDisplay">-</span> tok</span>
+    <span>⚡ <span id="speedDisplay">-</span> tok/s</span>
+  </div>
+</div>
+<div class="chat-area" id="chatArea" role="log" aria-live="polite">
+  <div class="message bot">你好！我是 Riycol Agent，支持 Markdown 渲染、代码高亮和知识库搜索 🚀</div>
+</div>
+<div class="settings-row">
+  <label>🌡️ Temp <input type="number" id="tempVal" value="0.7" min="0" max="2" step="0.1"></label>
+  <label>📝 Max Tokens <input type="number" id="maxTok" value="1024" min="64" max="4096" step="64"></label>
+  <label class="toggle"><input type="checkbox" id="mdToggle" checked> MD</label>
+  <label class="toggle"><input type="checkbox" id="wsToggle" onchange="toggleWS()"> WS</label>
+  <label>🤖 <select id="modelSelect">
+    <option value="local">本地</option>
+    <option value="ollama">Ollama</option>
+    <option value="deepseek">DeepSeek</option>
+  </select></label>
+</div>
+<div class="status-bar">
+  <span id="statusText"><span id="inputHint">输入消息开始对话</span><span id="modelHint" style="margin-left:8px;opacity:0.7"></span></span>
+  <span>
+    <span id="kbIndicator"></span>
+    <a class="export-btn" onclick="exportChat()" aria-label="Export chat">📥 导出</a>
+    <a class="clear-btn" onclick="confirmClear()" aria-label="Clear chat">🗑️ 清除</a>
+  </span>
+</div>
+<div class="input-wrap">
+  <textarea id="inputBox" placeholder="输入消息... (Enter发送, Shift+Enter换行)" rows="1" autofocus aria-label="Chat input"></textarea>
+  <button id="sendBtn" onclick="send()" aria-label="Send message">发送</button>
+  <button id="stopBtn" class="stop" onclick="stopGen()" aria-label="Stop generation">⏹ 停止</button>
+</div>
+</div>
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <p>确定要清除所有对话历史吗？</p>
+    <button class="btn-yes" onclick="clearHistory()">确定清除</button>
+    <button class="btn-no" onclick="closeConfirm()">取消</button>
+  </div>
+</div>
+
+<script>
+// ===== Config =====
+var API_BASE = "";
+var sid = localStorage.getItem('riycol_sid') || ('s' + Date.now());
+localStorage.setItem('riycol_sid', sid);
+var streaming = false, botMsg = null, startTime = 0;
+var abortCtrl = null;
+
+// ===== DOM refs =====
+const $ = id => document.getElementById(id);
+const chatArea = $('chatArea'), inputBox = $('inputBox');
+const sendBtn = $('sendBtn'), stopBtn = $('stopBtn');
+const statusText = $('statusText'), speedDisplay = $('speedDisplay');
+const kbBadge = $('kbBadge'), kbIndicator = $('kbIndicator');
+const tokenDisplay = $('tokenDisplay');
+const tempVal = $('tempVal'), maxTok = $('maxTok'), mdToggle = $('mdToggle');
+const confirmOverlay = $('confirmOverlay');
+
+// ===== Session persistence =====
+function saveSession() {
+  var msgs = [];
+  chatArea.querySelectorAll('.message').forEach(function(m) {
+    msgs.push({cls: m.className.replace('message ',''), html: m.innerHTML});
+  });
+  try {
+    localStorage.setItem('riycol_chat', JSON.stringify(msgs));
+  } catch(e) {
+    // localStorage full — trim oldest messages
+  }
+}
+function loadSession() {
+  try {
+    var saved = JSON.parse(localStorage.getItem('riycol_chat') || '[]');
+    if (saved.length) {
+      chatArea.innerHTML = '';
+      saved.forEach(function(m) {
+        var div = document.createElement('div');
+        div.className = 'message ' + m.cls;
+        div.innerHTML = m.html;
+        chatArea.appendChild(div);
+      });
+      chatArea.scrollTop = chatArea.scrollHeight;
+    }
+  } catch(e) {}
+}
+loadSession();
+
+// ===== Simple Markdown renderer (content is pre-escaped, only safe tags added) =====
+function renderMD(text) {
+  if (!mdToggle.checked) return '<p>' + escapeHTML(text) + '</p>';
+  var html = text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    // code blocks
+    .replace(/```(\w*)\n([\s\S]*?)```/g, function(_, lang, code) {
+      return '<pre><code>' + code.trim() + '</code></pre>';
+    })
+    // inline code
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    // bold/italic
+    .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    // headings
+    .replace(/^### (.+)$/gm, '<h4>$1</h4>')
+    .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^# (.+)$/gm, '<h2>$1</h2>')
+    // blockquote
+    .replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>')
+    // unordered list
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    // ordered list
+    .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+    // horizontal rule
+    .replace(/^---$/gm, '<hr>')
+    // paragraphs
+    .split('\n\n').map(function(p) {
+      p = p.trim();
+      if (!p) return '';
+      if (p.match(/^<(h[2-4]|pre|ul|ol|li|blockquote|hr|table)/)) return p;
+      p = p.replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>');
+      return '<p>' + p.replace(/\n/g, '<br>') + '</p>';
+    }).join('');
+  return html;
+}
+
+function escapeHTML(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ===== Messages =====
+function addMsg(text, role) {
+  var div = document.createElement('div');
+  div.className = 'message ' + role;
+  if (role === 'bot') {
+    div.innerHTML = renderMD(text);
+  } else {
+    div.textContent = text;
+  }
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+  saveSession();
+  return div;
+}
+
+function addTyping() {
+  var div = document.createElement('div');
+  div.className = 'message bot';
+  div.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+  return div;
+}
+
+// ===== Stop generation =====
+function stopGen() {
+  if (abortCtrl) { abortCtrl.abort(); abortCtrl = null; }
+  if (useWS && ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({type: 'stop'}));
+  }
+  if (botMsg) {
+    botMsg.innerHTML = renderMD(botMsg.textContent || '(已停止)');
+  }
+  resetUI();
+}
+
+// ===== WebSocket with reconnect =====
+var ws = null, wsReconnectTimer = null, useWS = false;
+
+function toggleWS() {
+  useWS = $('wsToggle').checked;
+  if (useWS) { connectWS(); }
+  else { disconnectWS(); }
+  statusText.textContent = useWS ? 'WebSocket 模式' : 'SSE 模式';
+}
+
+function disconnectWS() {
+  if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
+  if (ws) { ws.close(); ws = null; }
+}
+
+function connectWS() {
+  if (ws && ws.readyState === WebSocket.OPEN) return;
+  if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
+  try {
+    var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(proto + '//' + location.host + '/ws');
+    ws.onopen = function() { statusText.textContent = 'WS 已连接'; };
+    ws.onmessage = function(e) {
+      try { var data = JSON.parse(e.data); } catch(ex) { return; }
+      if (data.type === 'token') {
+        fullText += data.token;
+        botMsg.innerHTML = renderMD(fullText);
+        chatArea.scrollTop = chatArea.scrollHeight;
+      } else if (data.type === 'done') {
+        var elapsed = (Date.now() - startTime) / 1000;
+        speedDisplay.textContent = data.tokens && elapsed ? (data.tokens / elapsed).toFixed(1) : '?';
+        if (data.knowledge && data.knowledge.token_budget) {
+          tokenDisplay.textContent = data.knowledge.token_budget.total_input_tokens + ' in';
+        }
+        statusText.textContent = data.tokens + ' out, ' + elapsed.toFixed(1) + 's';
+        botMsg.innerHTML = renderMD(fullText);
+        saveSession();
+        resetUI();
+      } else if (data.type === 'error') {
+        botMsg.innerHTML = renderMD('❌ ' + data.error);
+        statusText.textContent = '出错';
+        resetUI();
+      } else if (data.type === 'stopped') {
+        statusText.textContent = '已停止';
+        resetUI();
+      } else if (data.type === 'closed') {
+        statusText.textContent = 'WS 关闭';
+      }
+    };
+    ws.onclose = function() {
+      statusText.textContent = 'WS 断开';
+      ws = null;
+      if (streaming) resetUI();
+      // Auto-reconnect after 3s if WS mode is still enabled
+      if (useWS) {
+        wsReconnectTimer = setTimeout(function() {
+          statusText.textContent = 'WS 重连中...';
+          connectWS();
+        }, 3000);
+      }
+    };
+    ws.onerror = function() {
+      statusText.textContent = 'WS 错误';
+      // ws.onclose will fire after this, triggering reconnect
+    };
+  } catch(e) { statusText.textContent = 'WS 不可用 (使用 SSE)'; useWS = false; }
+}
+
+function sendWS() {
+  if (!ws || ws.readyState !== WebSocket.OPEN) { connectWS(); return; }
+  var text = inputBox.value.trim();
+  if (!text || streaming) return;
+
+  inputBox.value = '';
+  addMsg(text, 'user');
+  botMsg = addTyping();
+  streaming = true;
+  sendBtn.disabled = true; sendBtn.style.display = 'none';
+  stopBtn.style.display = '';
+  inputBox.disabled = true;
+  statusText.textContent = '思考中...';
+  fullText = ''; startTime = Date.now();
+
+  var temp = parseFloat(tempVal.value);
+  if (isNaN(temp) || temp < 0 || temp > 2) temp = 0.7;
+  var mt = parseInt(maxTok.value);
+  if (isNaN(mt) || mt < 64) mt = 1024;
+  ws.send(JSON.stringify({
+    type: 'chat', prompt: text, session_id: sid, model: $('modelSelect').value,
+    temperature: temp, max_tokens: mt
+  }));
+}
+
+function resetUI() {
+  streaming = false;
+  sendBtn.disabled = false;
+  stopBtn.style.display = 'none';
+  sendBtn.style.display = '';
+  inputBox.disabled = false;
+  inputBox.focus();
+}
+
+// ===== SSE Send =====
+inputBox.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+});
+inputBox.addEventListener('input', function() {
+  inputBox.style.height = 'auto';
+  inputBox.style.height = Math.min(inputBox.scrollHeight, 120) + 'px';
+});
+
+var fullText = '';  // shared between SSE and WS (NO local var shadow!)
+
+async function send() {
+  if (useWS) return sendWS();
+  var text = inputBox.value.trim();
+  if (!text || streaming) return;
+
+  inputBox.value = '';
+  addMsg(text, 'user');
+  botMsg = addTyping();
+  streaming = true;
+  sendBtn.disabled = true;
+  sendBtn.style.display = 'none';
+  stopBtn.style.display = '';
+  inputBox.disabled = true;
+  statusText.textContent = '思考中...';
+
+  fullText = '';
+  startTime = Date.now();
+  var temp = parseFloat(tempVal.value);
+  if (isNaN(temp) || temp < 0 || temp > 2) temp = 0.7;
+  var mt = parseInt(maxTok.value);
+  if (isNaN(mt) || mt < 64) mt = 1024;
+  abortCtrl = new AbortController();
+
+  try {
+    var res = await fetch(API_BASE + '/chat/stream', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({prompt: text, session_id: sid, max_tokens: mt, temperature: temp, model: $('modelSelect').value}),
+      signal: abortCtrl.signal
+    });
+
+    var reader = res.body.getReader();
+    var decoder = new TextDecoder();
+    var buf = '';
+
+    while (true) {
+      var chunk = await reader.read();
+      if (chunk.done) break;
+      buf += decoder.decode(chunk.value, {stream: true});
+      var lines = buf.split('\n');
+      buf = lines.pop() || '';
+
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        if (!line.startsWith('data: ')) continue;
+        try {
+          var data = JSON.parse(line.slice(6));
+          if (data.meta) {
+            kbBadge.style.display = 'inline';
+            kbIndicator.textContent = '📚 ' + (data.sources || []).join(', ');
+          } else if (data.done) {
+            var elapsed = (Date.now() - startTime) / 1000;
+            var speed = data.tokens && elapsed ? (data.tokens / elapsed).toFixed(1) : '?';
+            speedDisplay.textContent = speed;
+            var budget = data.knowledge && data.knowledge.token_budget;
+            if (budget) {
+              tokenDisplay.textContent = budget.total_input_tokens + ' in';
+            }
+            statusText.textContent = data.tokens + ' out, ' + elapsed.toFixed(1) + 's';
+            var modelUsed = data.knowledge && data.knowledge.model_used;
+            $('modelHint').textContent = modelUsed ? '| ' + modelUsed : '';
+            botMsg.innerHTML = renderMD(fullText);
+            saveSession();
+          } else if (data.token) {
+            fullText += data.token;
+            botMsg.innerHTML = renderMD(fullText);
+            chatArea.scrollTop = chatArea.scrollHeight;
+          } else if (data.error) {
+            botMsg.innerHTML = renderMD('❌ ' + data.error);
+            statusText.textContent = '出错';
+          }
+        } catch(e) {}
+      }
+    }
+  } catch(e) {
+    if (e.name === 'AbortError') {
+      statusText.textContent = '已停止';
+    } else {
+      botMsg.innerHTML = renderMD('⚠️ 连接失败，3秒后自动重连...');
+      statusText.textContent = '断开，重连中...';
+      setTimeout(function() {
+        if (!streaming) {
+          statusText.textContent = '已就绪';
+        }
+      }, 3000);
+    }
+  }
+  resetUI();
+}
+
+// ===== Clear with confirmation (POST, not GET) =====
+function confirmClear() {
+  if (streaming) return;
+  confirmOverlay.style.display = 'flex';
+}
+function closeConfirm() {
+  confirmOverlay.style.display = 'none';
+}
+async function clearHistory() {
+  closeConfirm();
+  if (streaming) return;
+  try {
+    await fetch(API_BASE + '/clear', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({session_id: sid})
+    });
+  } catch(e) {}
+  chatArea.innerHTML = '<div class="message bot">✨ 新对话开始！</div>';
+  sid = 's' + Date.now();
+  localStorage.setItem('riycol_sid', sid);
+  localStorage.removeItem('riycol_chat');
+  statusText.textContent = '历史已清除';
+  kbBadge.style.display = 'none';
+  kbIndicator.textContent = '';
+  speedDisplay.textContent = '-';
+}
+
+// ===== Export =====
+function exportChat() {
+  var msgs = [];
+  chatArea.querySelectorAll('.message').forEach(function(m) {
+    var role = m.classList.contains('user') ? '用户' : '助手';
+    msgs.push('## ' + role + '\n\n' + (m.textContent || m.innerText));
+  });
+  var blob = new Blob([msgs.join('\n\n---\n\n')], {type: 'text/markdown;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'riycol-chat-' + new Date().toISOString().slice(0,10) + '.md';
+  a.click();
+}
+</script>
+</body>
+</html>

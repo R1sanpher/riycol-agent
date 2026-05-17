@@ -1,0 +1,9 @@
+{"ts": 1778971956.328768, "type": "session_join", "session": "sess_1778971956_9486", "name": "test-window"}
+{"ts": 1778971956.34645, "type": "session_join", "session": "sess_1778971956_9486", "name": "test-window"}
+{"ts": 1778971956.358026, "type": "task_done", "session": "sess_1778971956_9486", "task": "", "result": "Sync v3 ready"}
+{"ts": 1778971956.3581982, "type": "handoff", "session": "sess_1778971956_9486", "to": "other-window", "task": "", "result": "Sync v3 ready"}
+{"ts": 1778971956.361978, "type": "session_join", "session": "sess_1778971956_9486", "name": "test-window"}
+{"ts": 1778972823.8698988, "type": "session_join", "session": "sess_1778972823_ae9c", "name": "deep-check"}
+{"ts": 1778972823.8790526, "type": "session_join", "session": "sess_1778972823_ae9c", "name": "deep-check"}
+{"ts": 1778973012.4414124, "type": "session_join", "session": "sess_1778973012_d476", "name": "deep-check"}
+{"ts": 1778973012.4496822, "type": "session_join", "session": "sess_1778973012_d476", "name": "deep-check"}

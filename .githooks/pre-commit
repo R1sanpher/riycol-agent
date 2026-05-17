@@ -1,0 +1,128 @@
+#!/usr/bin/env python
+"""
+Git pre-commit hook: 自动代码审查 via Continue CLI
+安装: git config core.hooksPath .githooks
+"""
+import sys, os, subprocess, json, time
+
+def main():
+    print("=" * 50)
+    print("  Pre-commit: Continue 自动代码审查")
+    print("=" * 50)
+
+    # 获取暂存区变更
+    result = subprocess.run(
+        ["git", "diff", "--cached", "--stat"],
+        capture_output=True, text=True, encoding="utf-8"
+    )
+    files_changed = result.stdout.strip()
+    if not files_changed:
+        print("  无暂存变更，跳过审查")
+        return 0
+
+    print(f"  变更文件:\n{files_changed}")
+    print()
+
+    # 获取暂存区 diff
+    diff = subprocess.run(
+        ["git", "diff", "--cached"],
+        capture_output=True, text=True, encoding="utf-8"
+    ).stdout
+
+    if not diff or len(diff) < 20:
+        print("  无有效 diff，跳过")
+        return 0
+
+    # 检查 cn 是否可用
+    cn_path = subprocess.run(["where", "cn"], capture_output=True, text=True).stdout.strip()
+    if not cn_path:
+        print("  [SKIP] Continue CLI (cn) 未安装")
+        print("  安装: pip install continuedev")
+        return 0
+
+    # 分析变更文件类型
+    py_files = [f.strip() for f in files_changed.split('\n') if f.strip().endswith('.py')]
+    if not py_files:
+        print("  无 Python 文件变更，跳过审查")
+        return 0
+
+    # 快速语法检查
+    print("  [1/3] 语法检查...")
+    has_error = False
+    for pf in py_files:
+        fname = pf.split('|')[0].strip() if '|' in pf else pf.split()[0]
+        if not os.path.exists(fname):
+            continue
+        r = subprocess.run(
+            [sys.executable, "-c", f"import py_compile; py_compile.compile('{fname}', doraise=True)"],
+            capture_output=True, text=True
+        )
+        if r.returncode != 0:
+            print(f"    FAIL: {fname} - 语法错误!")
+            print(f"    {r.stderr.split(chr(10))[-2] if r.stderr else 'Unknown error'}")
+            has_error = True
+        else:
+            print(f"    OK: {fname}")
+
+    if has_error:
+        print("\n  ❌ 语法错误! 请修复后再提交")
+        print("  提示: 运行 python main.py run server 测试")
+        return 1
+
+    # Checkstyle: 简单代码风格检查
+    print("  [2/3] 代码风格检查...")
+    style_issues = []
+    for pf in py_files:
+        fname = pf.split('|')[0].strip() if '|' in pf else pf.split()[0]
+        if not os.path.exists(fname):
+            continue
+        with open(fname, 'r', encoding='utf-8') as f:
+            for i, line in enumerate(f, 1):
+                s = line.strip()
+                if s == 'except:':
+                    style_issues.append(f"    {fname}:{i} - 裸 except (应指定异常类型)")
+                if len(line) > 120 and not s.startswith('#'):
+                    style_issues.append(f"    {fname}:{i} - 行过长 ({len(line)}字符)")
+
+    if style_issues:
+        print("  发现代码风格问题:")
+        for issue in style_issues[:10]:
+            print(issue)
+        if len(style_issues) > 10:
+            print(f"    ... 还有 {len(style_issues)-10} 个问题")
+    else:
+        print("    代码风格检查通过")
+
+    # AI 审查 (通过 Continue CLI)
+    print("  [3/3] Continue AI 审查...")
+    print("    分析中...")
+
+    # 构造审查消息
+    prompt = f"""请审查以下 Git 暂存区 Python 代码变更。
+变更文件: {', '.join(py_files)}
+
+要求:
+1. 检查安全漏洞 (SQL注入、路径遍历)
+2. 检查错误处理是否完整
+3. 检查潜在 Bug
+4. 提供改进建议
+
+请用中文简要总结，关注严重问题。"""
+
+    try:
+        r = subprocess.run(
+            ["cn", "-p", prompt, "--allow", "Read,Terminal", "--silent"],
+            capture_output=True, text=True, timeout=60
+        )
+        if r.returncode == 0 and r.stdout.strip():
+            print(f"\n  Continue 审查结果:\n{r.stdout[:500]}")
+    except subprocess.TimeoutExpired:
+        print("    AI 审查超时 (跳过)")
+    except Exception as e:
+        print(f"    AI 审查出错: {e}")
+
+    print("\n  ✅ 审查完成，可以提交")
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())

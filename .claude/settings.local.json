@@ -1,0 +1,50 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "PowerShell(python -c \"from core.config import CFG; print\\(f'PORT={CFG.PORT} DEBUG={CFG.DEBUG} MODEL={CFG.OLLAMA_MODEL} KB_MODE={CFG.KB_MODE} EMBED={CFG.EMBEDDING_MODEL} VECTOR_KB={CFG.VECTOR_KB_PATH} LOG_LEVEL={CFG.LOG_LEVEL}'\\); print\\('validate:', CFG.validate\\(\\)\\)\")",
+      "PowerShell(pytest tests/ -v --tb=short --ignore=tests/test_e2e.py --ignore=tests/test_handler.py -x 2>&1)",
+      "PowerShell(ollama ps 2>$null; Get-Process -Name \"python\" -ErrorAction SilentlyContinue | Select-Object Id, ProcessName, @{N=\"MB\";E={[math]::Round\\($_.WorkingSet64/1MB\\)}} | Format-Table -AutoSize)",
+      "PowerShell(nvidia-smi --query-compute-apps=pid,name,used_memory --format=csv,noheader 2>$null)",
+      "PowerShell(Get-Item \"d:/riycol-agent/data/training/exports/riycol_full_20260516_train_cleaned.jsonl\" | ForEach-Object { $_.Length; $_.LastWriteTime })",
+      "PowerShell(pytest tests/test_evals.py -v --tb=short 2>&1)",
+      "PowerShell(nvidia-smi 2>$null)",
+      "PowerShell(Get-Process -Id 33388 | Select-Object Id, ProcessName, StartTime, CommandLine; \\(Get-WmiObject Win32_Process -Filter \"ProcessId=33388\"\\).CommandLine)",
+      "PowerShell(python d:\\\\riycol-agent\\\\scripts\\\\run_eval_baseline.py 2>&1)",
+      "PowerShell(ollama rm qwen3:8b 2>&1)",
+      "PowerShell(ollama create qwen3:8b -f config/qwen3.Modelfile 2>&1)",
+      "PowerShell(Get-Process -Id 33388 -ErrorAction SilentlyContinue)",
+      "PowerShell(nvidia-smi --query-gpu=memory.used,memory.free,utilization.gpu --format=csv,noheader)",
+      "PowerShell(npx repomix --style markdown --output repomix-report.md --no-code-summary --verbose 2>&1)",
+      "PowerShell(python -c \"from core.token_tracker import tracker; print\\('import OK'\\); print\\(tracker.snapshot\\(limit=10\\)\\)\")",
+      "PowerShell(python riycol.py tokens)",
+      "PowerShell(python -m pytest tests/ -v --ignore=tests/test_e2e.py --ignore=tests/test_handler.py -x --tb=short 2>&1)",
+      "PowerShell(npx repomix --style markdown --output repomix-report.md --no-file-summary --verbose 2>&1)",
+      "PowerShell(python -m ruff check core/token_tracker.py plugins/server/handler.py plugins/server/ws_handler.py plugins/agent/__init__.py plugins/telegram/ai.py cli/riycol.py --ignore E501 2>&1)",
+      "PowerShell(npx repomix --output repomix-optimized.md -c repomix.config.json 2>&1)",
+      "PowerShell(python riycol.py run server)",
+      "PowerShell(pip install outlines 2>&1)",
+      "PowerShell(curl.exe -s http://localhost:8000/ping 2>$null)",
+      "PowerShell(python -c \"import lm_format_enforcer; print\\(dir\\(lm_format_enforcer\\)\\)\" 2>&1)",
+      "PowerShell(pip show lm-format-enforcer 2>&1)",
+      "PowerShell(python -c \"import sys; print\\(sys.path\\)\" 2>&1)",
+      "Read(//d/Lib/site-packages/**)",
+      "PowerShell(python -c \"import lmformatenforcer; print\\(dir\\(lmformatenforcer\\)\\)\" 2>&1)",
+      "PowerShell(python demo_structured_output.py 2>&1)",
+      "PowerShell(npm install -g promptfoo 2>&1)",
+      "PowerShell(Invoke-RestMethod -Uri \"http://localhost:8000/ping\" -ErrorAction SilentlyContinue)",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri \"http://localhost:8000/ping\" -TimeoutSec 3 -ErrorAction Stop; Write-Host \"RESPONSE: $\\($r.Content\\)\" } catch { Write-Host \"ERROR: $\\($_.Exception.Message\\)\" })"
+    ]
+  },
+  "enabledPlugins": {
+    "marketing-skills@marketing-skills": true
+  },
+  "extraKnownMarketplaces": {
+    "marketing-skills": {
+      "source": {
+        "source": "directory",
+        "path": "d:/riycol-agent/skills/marketingskills"
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+.env
+data/database.db
+data/chroma_db/
+data/training/exports/
+data/training/output/
+.DS_Store
+continue.json
+.continue/
+*.log
+logs/
+review.md
+
+# 大文件 / 生成文件
+models/
+unsloth_compiled_cache/
+repomix-output.md
+
+# 本地配置含密钥
+.vscode/settings.json

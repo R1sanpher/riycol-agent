@@ -1,0 +1,6 @@
+{
+  "key": "shift+ctrl+alt+r",    // ← 已改为三键组合
+		"command": "workbench.action.tasks.runTask",
+		"args": "Continue: 代码审查并生成报告"
+	}
+

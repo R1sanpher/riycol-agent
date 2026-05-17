@@ -1,0 +1,77 @@
+### ==========================================
+### Riycol Agent API 测试集合
+### 使用 REST Client 扩展直接发送请求
+### ==========================================
+
+@baseUrl = http://localhost:8000
+
+
+### 1. 健康检查
+GET {{baseUrl}}/health
+
+
+### 2. 非流式聊天
+POST {{baseUrl}}/chat
+Content-Type: application/json
+
+{
+  "message": "你好，请介绍一下你自己",
+  "session_id": "test-001"
+}
+
+
+### 3. SSE 流式聊天
+POST {{baseUrl}}/chat/stream
+Content-Type: application/json
+
+{
+  "message": "用python写一个快速排序",
+  "session_id": "test-001"
+}
+
+
+### 4. 知识库状态
+GET {{baseUrl}}/kb/status
+
+
+### 5. 添加文本到知识库
+POST {{baseUrl}}/kb/add
+Content-Type: application/json
+
+{
+  "text": "Riycol Agent 是一个多功能的AI服务平台",
+  "source": "manual"
+}
+
+
+### 6. 搜索知识库
+POST {{baseUrl}}/kb/search
+Content-Type: application/json
+
+{
+  "query": "Riycol Agent"
+}
+
+
+### 7. 清除会话
+POST {{baseUrl}}/clear
+Content-Type: application/json
+
+{
+  "session_id": "test-001"
+}
+
+
+### 8. 指标监控 (需鉴权)
+GET {{baseUrl}}/metrics
+Authorization: Bearer {{apiKey}}
+
+
+### 9. 数据库统计 (需鉴权)
+GET {{baseUrl}}/db/stats
+Authorization: Bearer {{apiKey}}
+
+
+### 10. Prompt 模板列表 (需鉴权)
+GET {{baseUrl}}/prompts
+Authorization: Bearer {{apiKey}}

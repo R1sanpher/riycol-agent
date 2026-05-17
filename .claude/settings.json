@@ -1,0 +1,68 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($wmi = Get-WmiObject Win32_Process -Filter \"ProcessId=33388\"; $wmi.GetOwner\\(\\).User; $wmi.ProcessId; $wmi.CreationDate; $wmi.Status)",
+      "PowerShell(Get-WmiObject Win32_Process -Filter \"ProcessId=4584\")",
+      "PowerShell(Get-WmiObject Win32_Process -Filter \"ProcessId=7968\")",
+      "PowerShell(Get-Process -Id 4584 -ErrorAction SilentlyContinue | Select-Object Id, ProcessName, StartTime, @{N=\"CmdLine\";E={\\(Get-WmiObject Win32_Process -Filter \"ProcessId=$\\($_.Id\\)\"\\).CommandLine}})",
+      "PowerShell(Get-Service -Name ollama -ErrorAction SilentlyContinue)",
+      "PowerShell(taskkill /F /PID 7968 2>&1)",
+      "PowerShell(python d:\\\\riycol-agent\\\\scripts\\\\pre_clear_check.py)",
+      "WebFetch(domain:v.douyin.com)",
+      "WebSearch",
+      "WebFetch(domain:www.iesdouyin.com)",
+      "WebFetch(domain:www.douyin.com)"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "notion"
+  ],
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -File \"d:/riycol-agent/skills/self-improving-agent/scripts/activator.ps1\""
+          },
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -File \"d:/riycol-agent/.claude/hooks/session-sync.ps1\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -File \"d:/riycol-agent/skills/self-improving-agent/scripts/error-detector.ps1\""
+          }
+        ]
+      },
+      {
+        "matcher": "Edit,Write,Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -File \"d:/riycol-agent/.claude/hooks/notion-auto-sync.ps1\""
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "marketing-skills@marketing-skills": true
+  },
+  "extraKnownMarketplaces": {
+    "marketing-skills": {
+      "source": {
+        "source": "directory",
+        "path": "d:/riycol-agent/skills/marketingskills"
+      }
+    }
+  }
+}

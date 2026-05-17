@@ -1,0 +1,23 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Continue: 代码审查并生成报告",
+			"type": "shell",
+			"command": "npx.cmd",
+			"args": [
+				"--yes",
+				"@continuedev/cn",
+				"run",
+				"审查最新提交的代码，检查安全漏洞和性能问题，用中文总结，输出到 review.md",
+				"--auto-approve"
+			],
+			"presentation": {
+				"reveal": "always",
+				"panel": "new"
+			},
+			"problemMatcher": []
+		}
+	]
+}
+

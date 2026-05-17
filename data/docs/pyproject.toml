@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "riycol-agent"
+version = "2.2.0"
+description = "Multi-agent AI service framework with local LLM, Telegram bot, and knowledge base"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Riycol Team"}]
+
+dependencies = [
+    "openai>=1.0",
+    "requests>=2.28",
+    "chromadb>=0.4",
+]
+
+[project.optional-dependencies]
+local_llm = [
+    "llama-cpp-python>=0.2",
+    "numpy>=1.24",
+]
+kb_extras = [
+    "PyPDF2>=3.0",
+    "pdfplumber>=0.10",
+    "python-docx>=1.1",
+    "sentence-transformers>=2.2",
+]
+tokenizer = [
+    "tiktoken>=0.7",
+]
+telegram = [
+    "python-telegram-bot>=20.0",
+]
+dev = [
+    "pytest>=7.0",
+    "pytest-mock>=3.10",
+    "ruff>=0.4",
+]
+all = [
+    "riycol-agent[local_llm,kb_extras,tokenizer,telegram,dev]",
+]
+
+[tool.setuptools.packages.find]
+include = ["core*", "cli*", "plugins*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 110

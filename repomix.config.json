@@ -1,0 +1,42 @@
+{
+  "output": {
+    "style": "markdown",
+    "fileSummary": false,
+    "directoryStructure": true,
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "topFilesLength": 10,
+    "showLineNumbers": false,
+    "copyToClipboard": false
+  },
+  "include": ["**/*.py", "**/*.js", "**/*.html", "**/*.css", "**/*.json", "**/*.md", "**/*.toml", "**/*.yaml", "**/*.yml", "**/*.cfg", "**/*.ini", "**/*.bat", "**/*.ps1"],
+  "ignore": {
+    "customPatterns": [
+      "models/**",
+      "unsloth_compiled_cache/**",
+      "data/chroma_memory/**",
+      "data/training/**",
+      "node_modules/**",
+      "**/__pycache__/**",
+      "*.safetensors",
+      "*.bin",
+      "*.gguf",
+      "*.sqlite3",
+      "*.lock",
+      "venv/**",
+      ".venv/**",
+      "**/*.pyc",
+      "deploy/**",
+      "tests/**",
+      "static/**",
+      "Bug知识库/**",
+      ".learnings/**",
+      "docs/**",
+      "data/docs/**",
+      "data/sync/**",
+      "data/eval/**",
+      "repomix-report.md",
+      "repomix-optimized.md"
+    ]
+  }
+}
