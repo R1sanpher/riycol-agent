@@ -126,3 +126,41 @@ Old version archived to .learnings/prompts_archive/. Monitor performance for reg
 Prompt `test/up` upgraded v1→v2: test
 ### Suggested Action
 Old version archived to .learnings/prompts_archive/. Monitor performance for regression.
+
+## [LRN-20260517-24064] best_practice
+**Priority**: medium
+**Status**: resolved
+**Area**: config
+### Summary
+Prompt `test/up` upgraded v1→v2: test
+### Suggested Action
+Old version archived to .learnings/prompts_archive/. Monitor performance for regression.
+
+---
+
+## [LRN-20260517-001] best_practice
+**Priority**: high
+**Status**: resolved
+**Area**: backend
+### Summary
+`core/planner.py` and `core/reflection.py` imported `from plugins.agent import raw_llm_call`, creating a circular dependency (core→plugins→core). Fixed by creating `core/llm_client.py` with a registration pattern: plugins register their LLM call function at import time via `set_llm_call()`, core modules use `llm_call()`.
+### Suggested Action
+Apply same pattern to any future module that needs cross-layer function sharing: define interface in `core/`, register implementation in `plugins/`.
+
+## [LRN-20260517-002] best_practice
+**Priority**: medium
+**Status**: resolved
+**Area**: backend
+### Summary
+`reflection.py` regex `r"\{[\s\S]*?\}"` used lazy matching which fails on JSON with nested braces (e.g. `{"issues": ["nested {brace}"]}`). Changed to greedy `r"\{[\s\S]*\}"` for single-JSON-object extraction.
+### Suggested Action
+When extracting JSON from LLM output, use bracket-depth matching (like planner.py) for production, or greedy regex with json.loads fallback for simple cases.
+
+## [LRN-20260517-003] best_practice
+**Priority**: medium
+**Status**: resolved
+**Area**: backend
+### Summary
+`core/security.py` had `ALLOWED_COMMANDS` list missing `rm`, but had special hardening logic for `rm` (recursive/absolute path checks). This was dead code — whitelist check always blocked rm before hardening could run. Fixed by adding `rm` to the whitelist.
+### Suggested Action
+Audit ALLOWED_COMMANDS against any special-case logic in validate_command() to ensure no dead code paths exist.

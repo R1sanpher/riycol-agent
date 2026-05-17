@@ -30,6 +30,7 @@ def describe_image_api(image_path: str, prompt: str = "请详细描述这张图�
     """Use DeepSeek/OpenAI vision API to describe an image."""
     data_uri = encode_image(image_path)
     from openai import OpenAI
+    from core.token_tracker import tracker
     client = OpenAI(api_key=CFG.DEEPSEEK_KEY, base_url=CFG.DEEPSEEK_URL)
     resp = client.chat.completions.create(
         model=model,
@@ -42,6 +43,11 @@ def describe_image_api(image_path: str, prompt: str = "请详细描述这张图�
         }],
         max_tokens=1024,
     )
+    usage = getattr(resp, "usage", None)
+    if usage:
+        tracker.record(model, "server",
+                       usage.prompt_tokens or 0,
+                       usage.completion_tokens or 0)
     return resp.choices[0].message.content or ""
 
 

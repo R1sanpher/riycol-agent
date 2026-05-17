@@ -70,34 +70,51 @@ class RiycolLLM:
 
     def _call_deepseek(self, system: str, user: str, history: list, stop=None) -> str:
         from openai import OpenAI
+        from core.token_tracker import tracker as _ct
         client = OpenAI(api_key=CFG.DEEPSEEK_KEY, base_url=CFG.DEEPSEEK_URL)
         msgs = [{"role": "system", "content": system}]
         msgs.extend(history)
         msgs.append({"role": "user", "content": user})
         resp = client.chat.completions.create(
             model="deepseek-chat", messages=msgs, temperature=0.7)
+        usage = getattr(resp, "usage", None)
+        if usage:
+            _ct.record("deepseek", "crew",
+                        usage.prompt_tokens or 0,
+                        usage.completion_tokens or 0)
         return resp.choices[0].message.content or ""
 
     def _call_ollama(self, system: str, user: str, history: list, stop=None) -> str:
         from openai import OpenAI
+        from core.token_tracker import tracker as _ct
         client = OpenAI(base_url=f"{get_ollama_url()}/v1", api_key="ollama")
         msgs = [{"role": "system", "content": system}]
         msgs.extend(history)
         msgs.append({"role": "user", "content": user})
         resp = client.chat.completions.create(
             model=CFG.OLLAMA_MODEL, messages=msgs, temperature=0.7)
+        usage = getattr(resp, "usage", None)
+        if usage:
+            _ct.record("ollama", "crew",
+                        usage.prompt_tokens or 0,
+                        usage.completion_tokens or 0)
         return resp.choices[0].message.content or ""
 
     def _call_local(self, system: str, user: str, history: list, stop=None) -> str:
         from core.llm_bridge import is_loaded, generate
+        from core.token_tracker import tracker as _ct
+        from core.token_counter import count as _cnt
         if not is_loaded():
             return "[CrewAI] Local model not loaded"
         parts = [f"<|im_start|>system\n{system}<|im_end|>\n"]
         for m in history:
             parts.append(f"<|im_start|>{m['role']}\n{m['content']}<|im_end|>\n")
         parts.append(f"<|im_start|>user\n{user}<|im_end|>\n<|im_start|>assistant\n")
-        resp = generate("".join(parts), max_tokens=1024, temperature=0.7)
-        return str(resp.get("choices", [{}])[0].get("text", "")).strip()
+        prompt = "".join(parts)
+        resp = generate(prompt, max_tokens=1024, temperature=0.7)
+        text = str(resp.get("choices", [{}])[0].get("text", "")).strip()
+        _ct.record("local", "crew", _cnt(prompt), _cnt(text))
+        return text
 
 
 # ============================================================

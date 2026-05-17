@@ -62,16 +62,22 @@ class TokenTracker:
     def __init__(self, max_records: int = 1000, persist_path: str | None = None):
         self._records: list[TokenRecord] = []
         self._max_records = max_records
+        self._baseline_cost: float = 0.0
         self._lock = threading.Lock()
         self._persist_path = Path(persist_path) if persist_path else None
         if self._persist_path:
             self._load()
 
     def _load(self):
-        """Load records from the persist file."""
+        """Load records and baseline from the persist file."""
         try:
             if self._persist_path.exists():
                 raw = json.loads(self._persist_path.read_text("utf-8"))
+                # New format: {"records": [...], "baseline_cost": 5.71}
+                # Legacy format: flat array
+                if isinstance(raw, dict):
+                    self._baseline_cost = raw.get("baseline_cost", 0.0)
+                    raw = raw.get("records", [])
                 for item in raw:
                     rec = TokenRecord.__new__(TokenRecord)
                     for k in ("ts", "model", "source", "prompt_tokens",
@@ -82,15 +88,16 @@ class TokenTracker:
             pass  # Corrupted file — start fresh
 
     def _save(self):
-        """Write all records to the persist file."""
+        """Write all records + baseline to the persist file."""
         if not self._persist_path:
             return
         try:
-            raw = [{"ts": r.ts, "model": r.model, "source": r.source,
-                     "prompt_tokens": r.prompt_tokens,
-                     "completion_tokens": r.completion_tokens,
-                     "total_tokens": r.total_tokens, "cost": r.cost}
-                    for r in self._records]
+            records = [{"ts": r.ts, "model": r.model, "source": r.source,
+                        "prompt_tokens": r.prompt_tokens,
+                        "completion_tokens": r.completion_tokens,
+                        "total_tokens": r.total_tokens, "cost": r.cost}
+                       for r in self._records]
+            raw = {"records": records, "baseline_cost": self._baseline_cost}
             self._persist_path.parent.mkdir(parents=True, exist_ok=True)
             self._persist_path.write_text(json.dumps(raw, ensure_ascii=False), "utf-8")
         except Exception:
@@ -122,7 +129,7 @@ class TokenTracker:
 
         total_prompt = sum(r.prompt_tokens for r in records)
         total_completion = sum(r.completion_tokens for r in records)
-        total_cost = sum(r.cost for r in records)
+        total_cost = sum(r.cost for r in records) + self._baseline_cost
         call_count = len(records)
 
         # Per-source breakdown
@@ -159,7 +166,7 @@ class TokenTracker:
         }
 
     def reset(self):
-        """Clear all recorded data."""
+        """Clear all recorded data (keeps baseline)."""
         with self._lock:
             self._records.clear()
         if self._persist_path:
@@ -167,6 +174,11 @@ class TokenTracker:
                 self._persist_path.unlink(missing_ok=True)
             except Exception:
                 pass
+
+    def set_baseline(self, cost: float):
+        """Set baseline cost for pre-tracker usage (e.g. DeepSeek historical)."""
+        self._baseline_cost = cost
+        self._save()
 
 
 # Global singleton — import this everywhere

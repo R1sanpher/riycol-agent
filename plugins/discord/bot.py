@@ -46,7 +46,12 @@ class DiscordBot:
     def _register_handlers(self):
         @self.client.event
         async def on_ready():
-            await self.tree.sync()
+            # Sync commands to all guilds for instant availability
+            for guild in self.client.guilds:
+                try:
+                    await self.tree.sync(guild=discord.Object(id=guild.id))
+                except Exception as e:
+                    log.warn(f"Discord: failed to sync commands to guild {guild.id}: {e}")
             log.info(f"Discord bot logged in as {self.client.user} (ID: {self.client.user.id})")
 
         @self.client.event
@@ -56,6 +61,19 @@ class DiscordBot:
         @self.client.event
         async def on_resumed():
             log.info("Discord bot resumed connection")
+
+        @self.client.event
+        async def on_guild_available(guild):
+            """Sync commands when a guild becomes available."""
+            try:
+                await self.tree.sync(guild=discord.Object(id=guild.id))
+                log.debug(f"Discord: synced commands to guild {guild.id}")
+            except Exception as e:
+                log.warn(f"Discord: failed to sync commands to guild {guild.id}: {e}")
+
+        @self.tree.error
+        async def on_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+            log.error(f"Discord command error from {interaction.user.id}: {error}")
 
         @self.tree.command(name="chat", description="Chat with Riycol AI (remembers conversation)")
         @app_commands.describe(message="Your message for the AI")
@@ -176,23 +194,35 @@ class DiscordBot:
         log.info("Discord bot thread started")
 
     def _run_loop(self):
-        """Run the asyncio event loop in this thread."""
+        """Run the asyncio event loop in this thread with auto-reconnect."""
         try:
             self._loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self._loop)
-            try:
-                self._loop.run_until_complete(self.client.start(CFG.DISCORD_BOT_TOKEN))
-            except Exception as e:
-                log.error(f"Discord bot error: {e}")
-            finally:
+            # Auto-reconnect loop
+            max_retries = 10
+            retry_delay = 10
+            for attempt in range(1, max_retries + 1):
                 try:
-                    self._loop.close()
-                except Exception:
-                    pass
-                if self.running:
-                    log.warn("Discord bot disconnected unexpectedly")
+                    self._loop.run_until_complete(self.client.start(CFG.DISCORD_BOT_TOKEN))
+                except Exception as e:
+                    log.error(f"Discord bot error (attempt {attempt}/{max_retries}): {e}")
+                finally:
+                    if not self.running:
+                        break
+                    log.warn(f"Discord bot disconnected, reconnecting in {retry_delay}s (attempt {attempt}/{max_retries})...")
+                    try:
+                        self._loop.run_until_complete(asyncio.sleep(retry_delay))
+                    except Exception:
+                        break
+            if self.running:
+                log.warn("Discord bot: max reconnection attempts reached")
         except Exception as e:
             log.error(f"Discord bot thread crashed: {e}")
+        finally:
+            try:
+                self._loop.close()
+            except Exception:
+                pass
 
     def stop(self):
         """Gracefully stop the bot."""

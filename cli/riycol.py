@@ -387,6 +387,8 @@ def main():
     p_tokens = sub.add_parser('tokens', help='Show token consumption stats')
     p_tokens.add_argument('--watch', action='store_true', help='Continuous refresh (3s interval)')
     p_tokens.add_argument('--limit', type=int, default=20, help='Recent records to show (default: 20)')
+    p_tokens.add_argument('--set-baseline', type=float, metavar='COST',
+                          help='Set historical baseline cost (e.g. 5.71 for DeepSeek platform)')
     p_tokens.set_defaults(func=cmd_tokens)
 
     args = parser.parse_args()
@@ -413,6 +415,13 @@ def cmd_scheduler(args):
 def cmd_tokens(args):
     """Display real-time token consumption statistics."""
     from core.token_tracker import tracker
+
+    if args.set_baseline is not None:
+        tracker.set_baseline(args.set_baseline)
+        print(f"  ✓ 基线费用已设为 ¥{args.set_baseline:.2f}")
+        print("    下次 snapshot 将计入该金额")
+        return
+
     snap = tracker.snapshot(limit=args.limit)
     t = snap["total"]
     print("=" * 56)
