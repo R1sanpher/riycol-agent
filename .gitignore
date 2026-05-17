@@ -2,6 +2,8 @@ __pycache__/
 *.pyc
 .env
 data/database.db
+data/database.db-shm
+data/database.db-wal
 data/chroma_db/
 data/training/exports/
 data/training/output/
